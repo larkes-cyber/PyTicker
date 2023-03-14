@@ -87,7 +87,7 @@ else:
         print(df)
         df.to_csv(f'{ticker}.csv')
 
-        st.plotly_chart(get_candlestick_chart(df, ticker), use_container_width=True)
+        st.plotly_chart(get_candlestick_chart(pd.read_csv(f'{ticker}.csv'), ticker), use_container_width=True)
     except:
         st.error('Error while loading ticker')
 
