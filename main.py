@@ -1,36 +1,63 @@
 import pandas as pd
-from pandas_datareader import data as web
-import numpy as np
-from datetime import datetime
 import matplotlib.pyplot as plt
 import streamlit as st
 import yfinance as yt
 import plotly.io as pio
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import os
 
 
-def get_candlestick_chart(df: pd.DataFrame, ticker):
-    layout = go.Layout(
-        title=f'График {ticker}',
-        xaxis={'title': 'Дата'},
-        yaxis={'title': 'Цена'},
+def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.1,
+        subplot_titles=(f'График {ticker}', 'Объемы'),
+        row_width=[0.3, 0.7]
     )
 
-    fig = go.Figure(
-        layout=layout,
-        data=[
-            go.Candlestick(
-                x=df['Date'],
-                open=df['Open'],
-                high=df['High'],
-                low=df['Low'],
-                close=df['Close'],
-                name='Candlestick chart'
-            ),
-        ]
+    fig.add_trace(
+        go.Candlestick(
+            x=df['Date'],
+            open=df['Open'],
+            high=df['High'],
+            low=df['Low'],
+            close=df['Close'],
+            name='Candlestick chart'
+        ),
+        row=1,
+        col=1,
     )
 
-    fig.update_xaxes(rangebreaks=[{'bounds': ['sat', 'mon']}])
+    fig.add_trace(
+        go.Line(x=df['Date'], y=df[f'{ma1}_ma'], name=f'{ma1} SMA'),
+        row=1,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Line(x=df['Date'], y=df[f'{ma2}_ma'], name=f'{ma2} SMA'),
+        row=1,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Bar(x=df['Date'], y=df['Volume'], name='Volume'),
+        row=2,
+        col=1,
+    )
+
+    fig['layout']['xaxis2']['title'] = 'Дата'
+    fig['layout']['yaxis']['title'] = 'Цена'
+    fig['layout']['yaxis2']['title'] = 'Объем'
+
+    fig.update_xaxes(
+        rangebreaks=[{'bounds': ['sat', 'mon']}],
+        rangeslider_visible=False,
+    )
 
     return fig
 
@@ -83,14 +110,16 @@ else:
     # ticker search
     ticker = st.selectbox('Введите тикер', symbols)
     try:
-        df = yt.download(f'{ticker}')
-        print(df)
-        df.to_csv(f'{ticker}.csv')
+        if f'{ticker}.csv' not in os.listdir():
+            df = yt.download(f'{ticker}')
+            df.to_csv(f'{ticker}.csv')
+        df = pd.read_csv(f'{ticker}.csv')
+        df['10_ma'] = df['Close'].rolling(10).mean()
+        df['20_ma'] = df['Close'].rolling(20).mean()
 
-        st.plotly_chart(get_candlestick_chart(pd.read_csv(f'{ticker}.csv'), ticker), use_container_width=True)
+        st.plotly_chart(get_candlestick_chart(df, ticker, 10, 20), use_container_width=True)
     except:
         st.error('Error while loading ticker')
-
 
 
 
