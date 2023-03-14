@@ -1,11 +1,23 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
+
+import requests
+from service import Service
+import asyncio
+
 import yfinance as yt
 import plotly.io as pio
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+
+
+#send user data
+async def sendUserData(login, password):
+    res  = await serv.sendUserData(login, password) 
+    st.session_state['auth'] = res
+    st.experimental_rerun()
 
 
 def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
@@ -65,11 +77,34 @@ def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
 pio.renderers.default = 'browser'
 
 
+
 plt.style.use('seaborn-whitegrid')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+
+serv = Service()
+#check auth state 
+st.session_state['auth'] = serv.checkUserSession()
+
+#auth part
+if st.session_state['auth']:
+    with st.sidebar:
+        st.title("АВТОРИЗИРОВАН!!")
+else:
+    with st.sidebar:
+        if st.checkbox('регистрация', False):
+            st.title("Регистрация:")
+        else:
+            st.title("Войти:")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button('Войти'): 
+            asyncio.run(  sendUserData(username, password)  )
+            
+
 examples = pd.read_csv('stocks.csv')
 symbols = examples['Symbol'].values.tolist()
+
 
 # Title
 st.write("""# PuTickers""")
