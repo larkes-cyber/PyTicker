@@ -4,13 +4,46 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 import streamlit as st
-from pypfopt.efficient_frontier import EfficientFrontier
-from pypfopt import risk_models
-from pypfopt import expected_returns
-from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
+import requests
+from service import Service
+import asyncio
+
+serv = Service()
+
+
+#check auth state 
+st.session_state['auth'] = serv.checkUserSession()
+
+
+
 
 plt.style.use('seaborn-whitegrid')
 st.set_option('deprecation.showPyplotGlobalUse', False)
+
+
+#send user data
+async def sendUserData(login, password):
+    res  = await serv.sendUserData(login, password) 
+    st.session_state['auth'] = res
+    st.experimental_rerun()
+
+
+
+#auth part
+if st.session_state['auth']:
+    with st.sidebar:
+        st.title("АВТОРИЗИРОВАН!!")
+else:
+    with st.sidebar:
+        if st.checkbox('регистрация', False):
+            st.title("Регистрация:")
+        else:
+            st.title("Войти:")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button('Войти'): 
+            asyncio.run(  sendUserData(username, password)  )
+            
 
 # Title
 st.write("""# PuTickers""")
