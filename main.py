@@ -15,6 +15,13 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import os
 
+ALL_TICKERS = ['YNDX', 'VKCO', 'TCSG', 'POLY', 'OZON', 'OKEY', 'MDMG', 'QIWI', 'SFTL', 'HHRU', 'POSI', 'WUSH', 'GLTR',
+               'GEMC', 'FIXP', 'FIVE', 'ETLN', 'CIAN', 'AGRO', 'UPRO', 'SFIN', 'ENPG', 'ENRU', 'PHOR', 'TRNFP', 'TGKA',
+               'TATNP', 'TATN', 'FLOT', 'AFKS', 'SELG', 'SGZH', 'CHMF', 'SBERP', 'SBER', 'SMLT', 'RNFT', 'HYDR', 'RUAL',
+               'RTKMP', 'RTKM', 'FEES', 'ROSN', 'RENI', 'PLZL', 'PIKK', 'NVTK', 'NLMK', 'MTSS', 'MOEX', 'MAGN', 'CBOM',
+               'MTLRP', 'MTLR', 'MGNT', 'MVID', 'LKOH', 'LSRG', 'LENT', 'IRAO', 'DSKY', 'GMKN', 'GAZP', 'VTBR', 'BSPB',
+               'BELU', 'AFLT', 'ALRS', 'MSNG']
+
 
 # send user data
 async def sendUserData(login, password):
@@ -85,6 +92,7 @@ def get_tickers_diagram(df):
         annotations=[dict(text=f'{df.shape[0]} компаний', font_size=20, showarrow=False)])
     return fig
 
+
 pio.renderers.default = 'browser'
 
 plt.style.use('seaborn-whitegrid')
@@ -114,7 +122,8 @@ symbols = examples['Symbol'].values.tolist()
 
 # Title
 title_cols = st.columns([1, 6])
-title_cols[0].image("https://user-images.githubusercontent.com/60555372/225298739-6126a612-44f3-4ff1-a78d-df1e58922cf2.png", width=100)
+title_cols[0].image(
+    "https://user-images.githubusercontent.com/60555372/225298739-6126a612-44f3-4ff1-a78d-df1e58922cf2.png", width=100)
 title_cols[1].write("""# PuTickers""")
 
 choice = st.radio('', ['Просмотр тикеров', 'Создание портфеля'])
@@ -125,9 +134,11 @@ if choice == 'Создание портфеля':
 
     # Auto portfolio Configurator
     if not st.checkbox('Автоподбор тикеров', True):
-        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=False)
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', ALL_TICKERS,
+                                        ['VKCO', 'GAZP', 'LKOH', 'POLY', 'POSI', 'SBER', 'OZON', 'AFLT', 'MTLR', 'PIKK'], disabled=False)
     else:
-        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=True)
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', ALL_TICKERS,
+                                        ['VKCO', 'GAZP', 'LKOH', 'POLY', 'POSI', 'SBER', 'OZON', 'AFLT', 'MTLR', 'PIKK'], disabled=True)
     # Risks/Profit Layout
     choice_risks = st.radio("Что вам важно?", ['Риски', 'Доходность'])
     if choice_risks == 'Риски':
@@ -136,8 +147,8 @@ if choice == 'Создание портфеля':
         st.metric(f'Риск', f'{risks} %')
 
         # Profit Layout
-        st.metric(f'Профит', f'{int((100 + risks) * investment / 100)} ₽', f'{risks} %')
-        profit = int((100 + risks) * investment / 100)
+        st.metric(f'Профит', f'{int((100 + risks) * investment / 100) - investment} ₽', f'{risks} %')
+        profit = int((100 + risks) * investment / 100) - investment
     else:
         # Profit Layout
         profit = st.slider('Профит', 0, investment, step=1)
@@ -161,31 +172,51 @@ if choice == 'Создание портфеля':
         # Tickers Layout
         for i in range(len(chosen_symbols)):
             with st.expander(f'{chosen_symbols[i]}'):
-                cost, percs, day_low, day_high, capital, day_value, amount, pot_delta = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, weights[i], 20
+                cost, percs, day_low, day_high, capital, day_value, amount, pot_delta = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, \
+                weights[i], 20
                 # Head
-                ticker_head_view = st.columns(3)
-                ticker_head_view[0].title('Белон АО')
+                ticker_head_view = st.columns(4)
+                ticker_head_view[0].subheader('Белон АО')
+                ticker_head_view[3].metric(f"Количество акций", amount)
                 ticker_head_view[1].metric(f'Цена', f'{cost} ₽', f'{percs} %')
-                ticker_head_view[2].metric(f'Стоимость бумаг в портфеле', f'{cost * amount} ₽', f'{round(cost*amount - cost*amount/(100+percs)*100, 1)} ₽')
+                ticker_head_view[2].metric(f'Стоимость бумаг в портфеле', f'{cost * amount} ₽',
+                                           f'{round(cost * amount - cost * amount / (100 + percs) * 100, 1)} ₽')
                 # Desc 1
                 ticker_head_view = st.columns(3)
                 ticker_head_view[0].write('Диапазон за сегодня')
                 ticker_head_view[0].subheader(f'{day_low} ₽ - {day_high} ₽')
                 ticker_head_view[1].write('Объем торгов за сегодня')
                 ticker_head_view[1].subheader(f'{day_value} ₽')
-                ticker_head_view[2].write('Капитализация')
-                ticker_head_view[2].subheader(f'{capital} ₽')
+                ticker_head_view[2].metric('Потенциальная прибыль',
+                                           value=f'{round(amount * cost * (100 + pot_delta) / 100 - amount * cost, 2)} ₽',
+                                           delta=f'{pot_delta} %')
+                # ticker_head_view[2].write('Капитализация')
+                # ticker_head_view[2].subheader(f'{capital} ₽')
                 # Desc 2
-                ticker_main_view = st.columns([1, 2])
-                ticker_main_view[1].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
-                ticker_main_view[0].metric('Количество акций', amount)
-                ticker_main_view[0].metric('Потенциальная прибыль', value=f'{amount*cost*(100+pot_delta)/100} ₽', delta=f'{pot_delta} %')
-                # Graphic
+                ticker_main_view = st.columns(1)
+                ticker_main_view[0].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
                 item = 'MSFT.csv'
                 df = pd.read_csv(f'MSFT.csv')
                 df['10_ma'] = df['Close'].rolling(10).mean()
                 df['20_ma'] = df['Close'].rolling(20).mean()
-
+                # Performance
+                st.subheader('Результаты')
+                week_perform = round(
+                    (float(df.iloc[[-1]]['Open']) - float(df.iloc[[-7]]['Open'])) / float(df.iloc[[-7]]['Open']) * 100,
+                    2)
+                month_perform = round((float(df.iloc[[-1]]['Open']) - float(df.iloc[[-30]]['Open'])) / float(
+                    df.iloc[[-30]]['Open']) * 100, 2)
+                half_year_perform = round((float(df.iloc[[-1]]['Open']) - float(df.iloc[[-180]]['Open'])) / float(
+                    df.iloc[[-180]]['Open']) * 100, 2)
+                year_perform = round((float(df.iloc[[-1]]['Open']) - float(df.iloc[[-365]]['Open'])) / float(
+                    df.iloc[[-365]]['Open']) * 100, 2)
+                # Performance view
+                perform_cols = st.columns(4)
+                perform_cols[0].metric('7 дней', value="", delta=f'{week_perform} %')
+                perform_cols[1].metric('30 дней', value="", delta=f'{month_perform} %')
+                perform_cols[2].metric('180 дней', value="", delta=f'{half_year_perform} %')
+                perform_cols[3].metric('365 дней', value="", delta=f'{year_perform} %')
+                # Graphic
                 st.plotly_chart(get_candlestick_chart(df, item, 10, 20), use_container_width=True)
     st.write()
 else:
@@ -202,5 +233,3 @@ else:
         st.plotly_chart(get_candlestick_chart(df, ticker, 10, 20), use_container_width=True)
     except:
         st.error('Error while loading ticker')
-
-
