@@ -161,7 +161,7 @@ if choice == 'Создание портфеля':
         # Tickers Layout
         for i in range(len(chosen_symbols)):
             with st.expander(f'{chosen_symbols[i]}'):
-                cost, percs, day_low, day_high, capital, day_value, amount = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, weights[i]
+                cost, percs, day_low, day_high, capital, day_value, amount, pot_delta = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, weights[i], 20
                 # Head
                 ticker_head_view = st.columns(3)
                 ticker_head_view[0].title('Белон АО')
@@ -176,9 +176,10 @@ if choice == 'Создание портфеля':
                 ticker_head_view[2].write('Капитализация')
                 ticker_head_view[2].subheader(f'{capital} ₽')
                 # Desc 2
-                ticker_main_view = st.columns([2, 1])
-                ticker_main_view[0].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
-                ticker_main_view[1].metric('Количество акций', amount)
+                ticker_main_view = st.columns([1, 2])
+                ticker_main_view[1].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
+                ticker_main_view[0].metric('Количество акций', amount)
+                ticker_main_view[0].metric('Потенциальная прибыль', value=f'{amount*cost*(100+pot_delta)/100} ₽', delta=f'{pot_delta} %')
                 # Graphic
                 item = 'MSFT.csv'
                 df = pd.read_csv(f'MSFT.csv')
