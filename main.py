@@ -1,3 +1,5 @@
+import random
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
@@ -13,15 +15,14 @@ from plotly.subplots import make_subplots
 import os
 
 
-#send user data
+# send user data
 async def sendUserData(login, password):
-    res  = await serv.sendUserData(login, password) 
+    res = await serv.sendUserData(login, password)
     st.session_state['auth'] = res
     st.experimental_rerun()
 
 
 def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
-
     fig = make_subplots(
         rows=2,
         cols=1,
@@ -76,17 +77,14 @@ def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
 
 pio.renderers.default = 'browser'
 
-
-
 plt.style.use('seaborn-whitegrid')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-
 serv = Service()
-#check auth state 
+# check auth state
 st.session_state['auth'] = serv.checkUserSession()
 
-#auth part
+# auth part
 if st.session_state['auth']:
     with st.sidebar:
         st.title("АВТОРИЗИРОВАН!!")
@@ -98,13 +96,11 @@ else:
             st.title("Войти:")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-        if st.button('Войти'): 
-            asyncio.run(  sendUserData(username, password)  )
-            
+        if st.button('Войти'):
+            asyncio.run(sendUserData(username, password))
 
 examples = pd.read_csv('stocks.csv')
 symbols = examples['Symbol'].values.tolist()
-
 
 # Title
 st.write("""# PuTickers""")
@@ -117,11 +113,9 @@ if choice == 'Создание портфеля':
 
     # Auto portfolio Configurator
     if not st.checkbox('Автоподбор тикеров', True):
-        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите состваить портфель', symbols, [])
-        if st.button('Submit'):
-            st.success(f'Ваш портфель состоит из: {" ".join(chosen_symbols)}')
-
-
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите состваить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=False)
+    else:
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите состваить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=True)
     # Risks/Profit Layout
     choice_risks = st.radio("Что вам важно?", ['Риски', 'Доходность'])
     if choice_risks == 'Риски':
@@ -130,15 +124,25 @@ if choice == 'Создание портфеля':
         st.metric(f'Риск', f'{risks} %')
 
         # Profit Layout
-        st.metric(f'Профит', f'{int((100+risks)*investment/100)} ₽', f'{risks} %')
-        profit = int((100+risks)*investment/100)
+        st.metric(f'Профит', f'{int((100 + risks) * investment / 100)} ₽', f'{risks} %')
+        profit = int((100 + risks) * investment / 100)
     else:
         # Profit Layout
         profit = st.slider('Профит', 0, investment, step=1)
-        st.metric(f'Доходность', f'{profit} ₽', f'{int(profit/investment*100)} %')
+        st.metric(f'Доходность', f'{profit} ₽', f'{int(profit / investment * 100)} %')
 
         # Risks Layout
-        st.metric(f'Риск', f'{int(profit/investment*100)} %')
+        st.metric(f'Риск', f'{int(profit / investment * 100)} %')
+
+    if st.button('Submit'):
+        st.success(f'Ваш портфель составлен!')
+        weights = [random.Random().randint(0, 20) for i in range(len(chosen_symbols))]
+        c = st.container()
+        for i in range(len(chosen_symbols)):
+            with st.expander(f'{chosen_symbols[i]}'):
+                columns = st.columns(2)
+                columns[0].title('Белон АО BLNG')
+                columns[1].metric('Цена 21,785 ₽', '+3,34 %')
 
     st.write()
 else:
@@ -155,6 +159,5 @@ else:
         st.plotly_chart(get_candlestick_chart(df, ticker, 10, 20), use_container_width=True)
     except:
         st.error('Error while loading ticker')
-
 
 
