@@ -12,6 +12,7 @@ import yfinance as yt
 import plotly.io as pio
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.express as px
 import os
 
 
@@ -75,6 +76,15 @@ def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
     return fig
 
 
+def get_tickers_diagram(df):
+    fig = px.pie(df, values='Количество', names='Тикер')
+    fig.update_traces(hole=.8, hoverinfo="label+percent+name")
+    fig.update_layout(
+        title_text="Баланс портфеля",
+        # Add annotations in the center of the donut pies.
+        annotations=[dict(text=f'{df.shape[0]} компаний', font_size=20, showarrow=False)])
+    return fig
+
 pio.renderers.default = 'browser'
 
 plt.style.use('seaborn-whitegrid')
@@ -103,7 +113,9 @@ examples = pd.read_csv('stocks.csv')
 symbols = examples['Symbol'].values.tolist()
 
 # Title
-st.write("""# PuTickers""")
+title_cols = st.columns([1, 6])
+title_cols[0].image("https://user-images.githubusercontent.com/60555372/225298739-6126a612-44f3-4ff1-a78d-df1e58922cf2.png", width=100)
+title_cols[1].write("""# PuTickers""")
 
 choice = st.radio('', ['Просмотр тикеров', 'Создание портфеля'])
 if choice == 'Создание портфеля':
@@ -113,9 +125,9 @@ if choice == 'Создание портфеля':
 
     # Auto portfolio Configurator
     if not st.checkbox('Автоподбор тикеров', True):
-        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите состваить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=False)
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=False)
     else:
-        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите состваить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=True)
+        chosen_symbols = st.multiselect('Введите тикеры, из которых хотите составить портфель', symbols, ['AAPL', 'AMZN', 'NKE', 'QCOM', 'CSCO'], disabled=True)
     # Risks/Profit Layout
     choice_risks = st.radio("Что вам важно?", ['Риски', 'Доходность'])
     if choice_risks == 'Риски':
@@ -134,16 +146,46 @@ if choice == 'Создание портфеля':
         # Risks Layout
         st.metric(f'Риск', f'{int(profit / investment * 100)} %')
 
+    # On submit
     if st.button('Submit'):
         st.success(f'Ваш портфель составлен!')
-        weights = [random.Random().randint(0, 20) for i in range(len(chosen_symbols))]
+
+        # getting ticker's weights
+        # st.subheader("")
+        weights = [random.Random().randint(1, 20) for i in range(len(chosen_symbols))]
         c = st.container()
+
+        # Tickers Diagram
+        diagram = st.plotly_chart(get_tickers_diagram(pd.DataFrame({'Количество': weights, 'Тикер': chosen_symbols})))
+
+        # Tickers Layout
         for i in range(len(chosen_symbols)):
             with st.expander(f'{chosen_symbols[i]}'):
-                columns = st.columns(2)
-                columns[0].title('Белон АО BLNG')
-                columns[1].metric('Цена 21,785 ₽', '+3,34 %')
+                cost, percs, day_low, day_high, capital, day_value, amount = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, weights[i]
+                # Head
+                ticker_head_view = st.columns(3)
+                ticker_head_view[0].title('Белон АО')
+                ticker_head_view[1].metric(f'Цена', f'{cost} ₽', f'{percs} %')
+                ticker_head_view[2].metric(f'Стоимость бумаг в портфеле', f'{cost * amount} ₽', f'{round(cost*amount - cost*amount/(100+percs)*100, 1)} ₽')
+                # Desc 1
+                ticker_head_view = st.columns(3)
+                ticker_head_view[0].write('Диапазон за сегодня')
+                ticker_head_view[0].subheader(f'{day_low} ₽ - {day_high} ₽')
+                ticker_head_view[1].write('Объем торгов за сегодня')
+                ticker_head_view[1].subheader(f'{day_value} ₽')
+                ticker_head_view[2].write('Капитализация')
+                ticker_head_view[2].subheader(f'{capital} ₽')
+                # Desc 2
+                ticker_main_view = st.columns([2, 1])
+                ticker_main_view[0].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
+                ticker_main_view[1].metric('Количество акций', amount)
+                # Graphic
+                item = 'MSFT.csv'
+                df = pd.read_csv(f'MSFT.csv')
+                df['10_ma'] = df['Close'].rolling(10).mean()
+                df['20_ma'] = df['Close'].rolling(20).mean()
 
+                st.plotly_chart(get_candlestick_chart(df, item, 10, 20), use_container_width=True)
     st.write()
 else:
     # ticker search
