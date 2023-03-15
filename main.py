@@ -235,13 +235,13 @@ else:
     # ticker search
     ticker = st.selectbox('Введите тикер', ALL_TICKERS)
     try:
-        # if f'{ticker}.csv' not in os.listdir():
-        #     df = yt.download(f'{ticker}')
-        #     df.to_csv(f'{ticker}.csv')
+        ticker_loader = Ticker(ticker)
+        ticker_loader.get_history_ticker_day().to_csv(f'{ticker}.csv')
+
         df = pd.read_csv(f'{ticker}.csv')
-        df['10_ma'] = df['Close'].rolling(10).mean()
-        df['20_ma'] = df['Close'].rolling(20).mean()
 
         st.plotly_chart(get_candlestick_chart(df, ticker, 10, 20), use_container_width=True)
+
+        st.write(ticker_loader.get_ticker_info())
     except:
         st.error('Error while loading ticker')
