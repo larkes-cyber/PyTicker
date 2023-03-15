@@ -1,3 +1,4 @@
+import datetime
 import random
 
 import pandas as pd
@@ -31,6 +32,10 @@ async def sendUserData(login, password):
 
 
 def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
+
+    df['10_ma'] = df['close'].rolling(10).mean()
+    df['20_ma'] = df['close'].rolling(20).mean()
+
     fig = make_subplots(
         rows=2,
         cols=1,
@@ -79,7 +84,6 @@ def get_candlestick_chart(df: pd.DataFrame, ticker, ma1, ma2):
         rangebreaks=[{'bounds': ['sat', 'mon']}],
         rangeslider_visible=False,
     )
-
     return fig
 
 
@@ -117,8 +121,8 @@ else:
         if st.button('Войти'):
             asyncio.run(sendUserData(username, password))
 
-examples = pd.read_csv('stocks.csv')
-symbols = examples['Symbol'].values.tolist()
+# examples = pd.read_csv('stocks.csv')
+# symbols = examples['Symbol'].values.tolist()
 
 # Title
 title_cols = st.columns([1, 6])
@@ -172,12 +176,20 @@ if choice == 'Создание портфеля':
         # Tickers Layout
         for i in range(len(chosen_symbols)):
             with st.expander(f'{chosen_symbols[i]}'):
-                cost, percs, day_low, day_high, capital, day_value, amount, pot_delta = 21.785, 3.34, 20.815, 22.78, 25110250000, 457740812, \
-                weights[i], 20
+
                 ticker_name = chosen_symbols[i]
+                ticker_loader = Ticker(ticker_name)
+                ticker_info = ticker_loader.get_ticker_info()
+                df = ticker_loader.get_history_ticker_day()
+                df.to_csv(f'{ticker_name}.csv')
+                df = pd.read_csv(f'{ticker_name}.csv', sep=',')
+                shortname = str(ticker_info['shortname'].loc[df.index[0]])
+                cost, percs, day_low, day_high, capital, day_value, amount, pot_delta = df.iloc[-1]['close'], round(df.iloc[-1]['close']/df.iloc[-1]['open']*100-100, 2), df.iloc[-1]['low'], df.iloc[-1]['high'], 25110250000, int(df.iloc[-1]['value']), \
+                weights[i], 20
+
                 # Head
                 ticker_head_view = st.columns(4)
-                ticker_head_view[0].subheader('Белон АО')
+                ticker_head_view[0].subheader(shortname)
                 ticker_head_view[3].metric(f"Количество акций", amount)
                 ticker_head_view[1].metric(f'Цена', f'{cost} ₽', f'{percs} %')
                 ticker_head_view[2].metric(f'Стоимость бумаг в портфеле', f'{cost * amount} ₽',
@@ -196,14 +208,7 @@ if choice == 'Создание портфеля':
 
                 # Desc 2
                 ticker_main_view = st.columns(1)
-                ticker_loader = Ticker(ticker_name)
-                df = ticker_loader.get_history_ticker_day()
-                df.to_csv(f'{ticker_name}.csv')
-                ticker_main_view[0].write(pd.read_csv(f'{ticker_name}.csv', sep=',', header=None), use_container_width=True)
-                item = f'{ticker_name}.csv'
-                df = pd.read_csv(f'{ticker_name}.csv')
-                df['10_ma'] = df['close'].rolling(10).mean()
-                df['20_ma'] = df['close'].rolling(20).mean()
+                ticker_main_view[0].write(ticker_info, use_container_width=True)
                 # Performance
                 st.subheader('Результаты')
                 week_perform = round(
@@ -213,24 +218,26 @@ if choice == 'Создание портфеля':
                     df.iloc[[-30]]['open']) * 100, 2)
                 half_year_perform = round((float(df.iloc[[-1]]['open']) - float(df.iloc[[-180]]['open'])) / float(
                     df.iloc[[-180]]['open']) * 100, 2)
-                year_perform = round((float(df.iloc[[-1]]['open']) - float(df.iloc[[-365]]['open'])) / float(
-                    df.iloc[[-365]]['open']) * 100, 2)
+                # year_perform = round((float(df.iloc[[-1]]['open']) - float(df.loc['2022:']['open'])) / float(
+                #     df.iloc[[-365]]['open']) * 100, 2)
                 # Performance view
                 perform_cols = st.columns(4)
                 perform_cols[0].metric('7 дней', value="", delta=f'{week_perform} %')
                 perform_cols[1].metric('30 дней', value="", delta=f'{month_perform} %')
                 perform_cols[2].metric('180 дней', value="", delta=f'{half_year_perform} %')
-                perform_cols[3].metric('365 дней', value="", delta=f'{year_perform} %')
+                # perform_cols[3].metric('З65 дней', value="", delta=f'{year_perform} %')
+
                 # Graphic
-                st.plotly_chart(get_candlestick_chart(df, item, 10, 20), use_container_width=True)
+                print(df)
+                st.plotly_chart(get_candlestick_chart(df, ticker_name, 10, 20), use_container_width=True)
     st.write()
 else:
     # ticker search
-    ticker = st.selectbox('Введите тикер', symbols)
+    ticker = st.selectbox('Введите тикер', ALL_TICKERS)
     try:
-        if f'{ticker}.csv' not in os.listdir():
-            df = yt.download(f'{ticker}')
-            df.to_csv(f'{ticker}.csv')
+        # if f'{ticker}.csv' not in os.listdir():
+        #     df = yt.download(f'{ticker}')
+        #     df.to_csv(f'{ticker}.csv')
         df = pd.read_csv(f'{ticker}.csv')
         df['10_ma'] = df['Close'].rolling(10).mean()
         df['20_ma'] = df['Close'].rolling(20).mean()
