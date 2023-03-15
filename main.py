@@ -180,12 +180,15 @@ if choice == 'Создание портфеля':
                 ticker_main_view[1].write(pd.read_csv('blng.csv', sep=';', header=None), use_container_width=True)
                 ticker_main_view[0].metric('Количество акций', amount)
                 ticker_main_view[0].metric('Потенциальная прибыль', value=f'{amount*cost*(100+pot_delta)/100} ₽', delta=f'{pot_delta} %')
-                # Graphic
                 item = 'MSFT.csv'
                 df = pd.read_csv(f'MSFT.csv')
                 df['10_ma'] = df['Close'].rolling(10).mean()
                 df['20_ma'] = df['Close'].rolling(20).mean()
-
+                # Performance
+                week_perform = round((float(df.iloc[[-1]]['Open']) - float(df.iloc[[-7]]['Open'])) / float(df.iloc[[-7]]['Open']) * 100, 2)
+                perform_cols = st.columns(5)
+                perform_cols[0].metric('1W', value="", delta=f'{week_perform} %')
+                # Graphic
                 st.plotly_chart(get_candlestick_chart(df, item, 10, 20), use_container_width=True)
     st.write()
 else:
