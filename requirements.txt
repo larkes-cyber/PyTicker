@@ -1,0 +1,7 @@
+streamlit
+pandas
+matplotlib
+plotly
+SQLAlchemy
+email_validator
+psycopg2
