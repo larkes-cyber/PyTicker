@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine, text
 import pandas as pd
-engine = create_engine("postgresql://fgvqsuuw:SI4HeiCDMZ2CplWiUk4oxDHATWVirVDQ@mel.db.elephantsql.com/fgvqsuuw")
+
+engine = create_engine("postgresql://fgvqsuuw:fziWIx4G-xu3bPvFa4zVSo1TIPZf7Vyc@mel.db.elephantsql.com/fgvqsuuw")
+
 
 class Ticker:
     def __init__(self, ticker) -> None:
         self.ticker = ticker
-        self.engine = create_engine("postgresql://fgvqsuuw:SI4HeiCDMZ2CplWiUk4oxDHATWVirVDQ@mel.db.elephantsql.com/fgvqsuuw")
 
     def get_ticker_info(self):
         return pd.read_sql_query(sql=text(f"SELECT * FROM tiker_info WHERE secid = '{self.ticker}'"), con=engine.connect())
